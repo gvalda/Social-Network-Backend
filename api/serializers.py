@@ -37,23 +37,14 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    tags = TagSerializer(many=True)
-    comments = CommentSerializer(many=True)
-    author = serializers.StringRelatedField(many=False)
+    tags = TagSerializer(many=True, required=False)
+    comments = CommentSerializer(many=True, required=False)
+    author = UserSerializer(many=False)
 
     class Meta:
         model = Post
         fields = ('id', 'author', 'description',
                   'created', 'tags', 'comments')
-
-
-class PostSerializerCreate(serializers.ModelSerializer):
-    tags = TagSerializer(many=True)
-
-    class Meta:
-        model = Post
-        fields = ('id', 'author', 'description',
-                  'created', 'tags',)
 
     def create(self, validated_data):
         tags_data = validated_data.pop('tags')
@@ -62,18 +53,14 @@ class PostSerializerCreate(serializers.ModelSerializer):
             post.tags.add(tag)
         return post
 
-
-class PostSerializerUpdate(serializers.ModelSerializer):
-    tags = TagSerializer(many=True)
-
-    class Meta:
-        model = Post
-        fields = ('id', 'author', 'description',
-                  'created', 'tags',)
-
     def update(self, instance, validated_data):
-        tags_data = validated_data.pop('tags')
-        post = Post.objects.create(**validated_data)
+        print(validated_data)
+        tags_data = validated_data.pop('tags', [])
+        instance.author = validated_data.get('author', instance.author)
+        print(instance.author, validated_data.get('author'))
+        instance.description = validated_data.get(
+            'description', instance.description)
         for tag in get_tags_from_dicts(tags_data):
-            post.tags.add(tag)
-        return post
+            instance.tags.add(tag)
+        instance.save()
+        return instance
