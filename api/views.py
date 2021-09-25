@@ -65,8 +65,8 @@ class PostsList(APIView):
         return Response(serializer.data)
 
     def post(self, request, user_pk, format=None):
-        user = request.user
-        request.data['author'] = user.pk
+        user = User.objects.get(username=user_pk)
+        request.data['author'] = user
         tags = make_dict_from_names(request.data['tags'])
         request.data['tags'] = tags
         serializer = PostSerializer(data=request.data)
@@ -88,9 +88,7 @@ class PostDetail(APIView):
     def put(self, request, user_pk, post_pk, format=None):
         instance = get_object_or_404(Post.objects.all(), pk=post_pk)
         user = request.user
-        user_serializer = UserSerializer(user, many=False)
-        request.data['author'] = user_serializer.data
-        print(request.data)
+        request.data['author'] = user
         serializer = PostSerializer(instance, data=request.data)
         if serializer.is_valid():
             serializer.save()

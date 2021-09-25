@@ -39,7 +39,7 @@ class CommentSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, required=False)
     comments = CommentSerializer(many=True, required=False)
-    author = UserSerializer(many=False)
+    author = serializers.ReadOnlyField(source='author.username')
 
     class Meta:
         model = Post
@@ -48,16 +48,16 @@ class PostSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         tags_data = validated_data.pop('tags')
+        print(validated_data)
         post = Post.objects.create(**validated_data)
         for tag in get_tags_from_dicts(tags_data):
             post.tags.add(tag)
+        post.save()
         return post
 
     def update(self, instance, validated_data):
-        print(validated_data)
         tags_data = validated_data.pop('tags', [])
         instance.author = validated_data.get('author', instance.author)
-        print(instance.author, validated_data.get('author'))
         instance.description = validated_data.get(
             'description', instance.description)
         for tag in get_tags_from_dicts(tags_data):
