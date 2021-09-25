@@ -112,18 +112,9 @@ class CommentDetail(APIView):
 
     def get(self, user_pk, post_pk, comment_pk, format=None):
         comment = Comment.objects.get(id=comment_pk)
-        print(comment)
         serializer = CommentSerializer(comment, many=False)
         return Response(serializer.data)
 
-
-# @api_view(['GET'])
-# def get_comment(request, user_pk, post_pk, comment_pk):
-#     comment = Comment.objects.get(id=comment_pk)
-#     print(comment)
-#     serializer = CommentSerializer(comment, many=False)
-
-#     return Response(serializer.data)
 
 class TagsList(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)

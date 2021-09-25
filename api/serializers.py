@@ -47,8 +47,10 @@ class PostSerializer(serializers.ModelSerializer):
                   'created', 'tags', 'comments')
 
     def create(self, validated_data):
+        author = self.initial_data.get('author', None)
+        if author:
+            validated_data['author'] = author
         tags_data = validated_data.pop('tags')
-        print(validated_data)
         post = Post.objects.create(**validated_data)
         for tag in get_tags_from_dicts(tags_data):
             post.tags.add(tag)
