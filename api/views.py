@@ -58,14 +58,20 @@ class UserDetail(APIView):
 class PostsList(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
-    def get(self, request, user_pk, format=None):
-        user = User.objects.get(username=user_pk)
-        posts = Post.objects.filter(author=user)
+    def get(self, request, format=None, **kwargs):
+        if 'user_pk' in kwargs:
+            user = User.objects.get(username=kwargs['user_pk'])
+            posts = Post.objects.filter(author=user)
+        else:
+            posts = Post.objects.all()
         serializer = PostSerializer(posts, many=True)
         return Response(serializer.data)
 
-    def post(self, request, user_pk, format=None):
-        user = User.objects.get(username=user_pk)
+    def post(self, request, format=None, **kwargs):
+        if 'user_pk' in kwargs:
+            user = User.objects.get(username=kwargs['user_pk'])
+        elif request.user.is_authenticated:
+            user = User.objects.get(username=request.user.username)
         request.data['author'] = user
         tags = make_dict_from_names(request.data['tags'])
         request.data['tags'] = tags
@@ -79,14 +85,19 @@ class PostsList(APIView):
 class PostDetail(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly, )
 
-    def get(self, request, user_pk, post_pk, format=None):
-        user = User.objects.get(username=user_pk)
-        post = get_object_or_404(Post.objects.filter(author=user), pk=post_pk)
+    def get(self, request, format=None, **kwargs):
+        if 'user_pk' in kwargs:
+            user = User.objects.get(username=kwargs['user_pk'])
+            post = get_object_or_404(Post.objects.filter(
+                author=user), pk=kwargs['post_pk'])
+        else:
+            post = get_object_or_404(Post.objects.all(), pk=kwargs['post_pk'])
+
         serializer = PostSerializer(post, many=False)
         return Response(serializer.data)
 
-    def put(self, request, user_pk, post_pk, format=None):
-        instance = get_object_or_404(Post.objects.all(), pk=post_pk)
+    def put(self, request, format=None, **kwargs):
+        instance = get_object_or_404(Post.objects.all(), pk=kwargs['post_pk'])
         user = request.user
         request.data['author'] = user
         serializer = PostSerializer(instance, data=request.data)
@@ -100,8 +111,9 @@ class PostDetail(APIView):
 class CommentsList(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly, )
 
-    def get(self, request, user_pk, post_pk, format=None):
-        post = Post.objects.get(id=post_pk)
+    def get(self, request, format=None, **kwargs):
+
+        post = Post.objects.get(id=kwargs['post_pk'])
         comments = Comment.objects.filter(post=post)
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
@@ -110,8 +122,12 @@ class CommentsList(APIView):
 class CommentDetail(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
-    def get(self, user_pk, post_pk, comment_pk, format=None):
-        comment = Comment.objects.get(id=comment_pk)
+    def get(self, user_pk, post_pk, comment_pk, format=None, **kwargs):
+        if 'post_pk' in kwargs:
+            comment = get_object_or_404(Comment.objects.filter(
+                author=kwargs['post_pk']), pk=kwargs['comment_pk'])
+        else:
+            comment = Comment.objects.get(id=kwargs['comment_pk'])
         serializer = CommentSerializer(comment, many=False)
         return Response(serializer.data)
 
@@ -119,7 +135,7 @@ class CommentDetail(APIView):
 class TagsList(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
-    def get(self, request, format=None):
+    def get(self, request, format=None, **kwargs):
         tags = Tag.objects.all()
         serializer = TagSerializer(tags, many=True)
         return Response(serializer.data)
@@ -128,7 +144,7 @@ class TagsList(APIView):
 class TagDetail(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
-    def get(self, request, tag_pk, format=None):
-        tag = Tag.objects.get(id=tag_pk)
+    def get(self, request, format=None, **kwargs):
+        tag = Tag.objects.get(id=kwargs['tag_pk'])
         serializer = TagSerializer(tag, many=False)
         return Response(serializer.data)
