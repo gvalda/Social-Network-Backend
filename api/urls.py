@@ -28,6 +28,10 @@ urlpatterns = [
          views.CommentsList.as_view(), name='get_post_comments'),
     path('posts/<str:post_pk>/comments/<str:comment_pk>/',
          views.CommentDetail.as_view(), name='get_post_comment'),
+    path('posts/comments/',
+         views.CommentsList.as_view(), name='get_comments'),
+    path('comments/<str:comment_pk>/',
+         views.CommentDetail.as_view(), name='get_comment'),
     path('tags/', views.TagsList.as_view(), name='get_tags'),
     path('tags/<str:tag_pk>/', views.TagDetail.as_view(), name='get_tag'),
 ]

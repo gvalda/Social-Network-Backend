@@ -72,7 +72,6 @@ class PostSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         tags_data = validated_data.pop('tags', [])
-        # instance.author = validated_data.get('author', instance.author)
         instance.description = validated_data.get(
             'description', instance.description)
         for tag in get_tags_from_dicts(tags_data):
