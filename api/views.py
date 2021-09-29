@@ -68,10 +68,7 @@ class PostsList(APIView):
         return Response(serializer.data)
 
     def post(self, request, format=None, **kwargs):
-        if 'user_pk' in kwargs:
-            user = User.objects.get(username=kwargs['user_pk'])
-        elif request.user.is_authenticated:
-            user = User.objects.get(username=request.user.username)
+        user = User.objects.get(username=request.user.username)
         request.data['author'] = user
         tags = make_dict_from_names(request.data['tags'])
         request.data['tags'] = tags
@@ -112,24 +109,47 @@ class CommentsList(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly, )
 
     def get(self, request, format=None, **kwargs):
-
         post = Post.objects.get(id=kwargs['post_pk'])
         comments = Comment.objects.filter(post=post)
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
 
+    def post(self, request, format=None, **kwargs):
+        user = request.user
+        post = Post.objects.get(id=kwargs['post_pk'])
+        request.data['post'] = post.id
+        request.data['author'] = user
+        serializer = CommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class CommentDetail(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
-    def get(self, user_pk, post_pk, comment_pk, format=None, **kwargs):
+    def get(self, request, format=None, **kwargs):
         if 'post_pk' in kwargs:
-            comment = get_object_or_404(Comment.objects.filter(
-                author=kwargs['post_pk']), pk=kwargs['comment_pk'])
+            comment = Comment.objects.get(
+                id=kwargs['comment_pk'], post=kwargs['post_pk'])
         else:
             comment = Comment.objects.get(id=kwargs['comment_pk'])
         serializer = CommentSerializer(comment, many=False)
         return Response(serializer.data)
+
+    def put(self, request, format=None, **kwargs):
+        if 'post_pk' in kwargs:
+            instance = Comment.objects.get(
+                id=kwargs['comment_pk'], post=kwargs['post_pk'])
+        else:
+            instance = Comment.objects.get(id=kwargs['comment_pk'])
+        serializer = CommentSerializer(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TagsList(APIView):

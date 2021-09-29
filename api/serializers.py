@@ -35,6 +35,19 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = '__all__'
 
+    def create(self, validated_data):
+        author = self.initial_data.get('author', None)
+        if author:
+            validated_data['author'] = author
+        comment = Comment.objects.create(**validated_data)
+        comment.save()
+        return comment
+
+    def update(self, instance, validated_data):
+        instance.text = validated_data.get('text', instance.text)
+        instance.save()
+        return instance
+
 
 class PostSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, required=False)
@@ -59,7 +72,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         tags_data = validated_data.pop('tags', [])
-        instance.author = validated_data.get('author', instance.author)
+        # instance.author = validated_data.get('author', instance.author)
         instance.description = validated_data.get(
             'description', instance.description)
         for tag in get_tags_from_dicts(tags_data):
