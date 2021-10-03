@@ -36,15 +36,19 @@ def get_routes(request):
 
 
 class UsersList(APIView):
-    permission_classes = (IsAuthenticatedOrReadOnly,)
 
     def get(self, request, format=None):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
-    def post(self, request, format=None):
-        pass
+    def post(self, request, format=None, **kwargs):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            print(3)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserDetail(APIView):

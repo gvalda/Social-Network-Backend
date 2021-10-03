@@ -11,7 +11,7 @@ from rest_framework import serializers
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ('description', 'privacy')
+        fields = ('description',)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -19,7 +19,20 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'email', 'profile')
+        fields = ('username', 'first_name', 'last_name',
+                  'email', 'profile', 'password')
+        extra_kwargs = {'password': {'write_only': True, }}
+
+    def create(self, validated_data):
+        profile_data = validated_data.pop('profile')
+        password = validated_data.pop('password')
+        user = User.objects.create(**validated_data)
+        user.set_password(password)
+        user.save()
+        profile = Profile.objects.get(user=user)
+        update_object(profile, **profile_data)
+        user.refresh_from_db()
+        return user
 
 
 class FollowerSerializer(serializers.ModelSerializer):
