@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from users.models import Profile
+from users.models import Profile, UserFollowing
 from posts.models import Post
 from tags.models import Tag
 from comments.models import Comment
@@ -20,6 +20,30 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'first_name', 'last_name', 'email', 'profile')
+
+
+class FollowerSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(many=False)
+
+    class Meta:
+        model = UserFollowing
+        fields = ('user', )
+
+    def create(self, validated_data):
+        user = self.initial_data.get('user', None)
+        follow = self.initial_data.get('follow', None)
+        user_following = UserFollowing.objects.create(
+            user=user, following_user=follow)
+        user_following.save()
+        return user_following
+
+
+class FollowingSerializer(serializers.ModelSerializer):
+    following_user = serializers.StringRelatedField(many=False)
+
+    class Meta:
+        model = UserFollowing
+        fields = ('following_user',)
 
 
 class TagSerializer(serializers.ModelSerializer):

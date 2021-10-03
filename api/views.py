@@ -1,14 +1,13 @@
 from django.shortcuts import get_object_or_404
-from django.http import Http404
 
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from users.models import User
+from users.models import User, UserFollowing
 from posts.models import Post
 from tags.models import Tag
 from comments.models import Comment
@@ -54,6 +53,36 @@ class UserDetail(APIView):
     def get(self, request, format=None, **kwargs):
         user = get_object_or_404(User, username=kwargs['user_pk'])
         serializer = UserSerializer(user, many=False)
+        return Response(serializer.data)
+
+
+class UserFollowersList(APIView):
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+
+    def get(self, request, format=None, **kwargs):
+        user = get_object_or_404(User, username=kwargs['user_pk'])
+        followers = user.followers.all()
+        serializer = FollowerSerializer(followers, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None, **kwargs):
+        user = get_object_or_404(User, username=request.user.username)
+        follow = get_object_or_404(User, username=kwargs['user_pk'])
+        if UserFollowing.objects.filter(user=user, following_user=follow).exists():
+            return Response(f'User {str(user)} already following user {str(follow)}', status=status.HTTP_409_CONFLICT)
+        data = {'user': user, 'follow': follow, }
+        serializer = FollowerSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserFollowingList(APIView):
+    def get(self, request, format=None, **kwargs):
+        user = get_object_or_404(User, username=kwargs['user_pk'])
+        following = user.following.all()
+        serializer = FollowingSerializer(following, many=True)
         return Response(serializer.data)
 
 
