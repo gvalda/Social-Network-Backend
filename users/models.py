@@ -48,5 +48,8 @@ class UserFollowing(models.Model):
         User, related_name='followers', on_delete=models.CASCADE)
     create = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = (('user', 'following_user'),)
+
     def __str__(self):
         return f'{self.user} following {self.following_user}'

@@ -45,7 +45,6 @@ class UsersList(APIView):
     def post(self, request, format=None, **kwargs):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
-            print(3)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -66,16 +65,14 @@ class UserFollowersList(APIView):
     def get(self, request, format=None, **kwargs):
         user = get_object_or_404(User, username=kwargs['user_pk'])
         followers = user.followers.all()
-        serializer = FollowerSerializer(followers, many=True)
+        serializer = UserFollowSerializer(user, many=False)
         return Response(serializer.data)
 
     def post(self, request, format=None, **kwargs):
-        user = get_object_or_404(User, username=request.user.username)
+        user = request.user
         follow = get_object_or_404(User, username=kwargs['user_pk'])
-        if UserFollowing.objects.filter(user=user, following_user=follow).exists():
-            return Response(f'User {str(user)} already following user {str(follow)}', status=status.HTTP_409_CONFLICT)
-        data = {'user': user, 'follow': follow, }
-        serializer = FollowerSerializer(data=data)
+        data = {'user': user.pk, 'following_user': follow.pk, }
+        serializer = UserFollowerSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -83,10 +80,11 @@ class UserFollowersList(APIView):
 
 
 class UserFollowingList(APIView):
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+
     def get(self, request, format=None, **kwargs):
         user = get_object_or_404(User, username=kwargs['user_pk'])
-        following = user.following.all()
-        serializer = FollowingSerializer(following, many=True)
+        serializer = UserFollowingSerializer(user, many=False)
         return Response(serializer.data)
 
 

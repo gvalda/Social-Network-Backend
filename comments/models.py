@@ -8,7 +8,7 @@ import uuid
 
 class Comment(models.Model):
     post = models.ForeignKey(
-        Post, on_delete=models.CASCADE, related_name='comments', editable=False)
+        Post, on_delete=models.CASCADE, related_name='comments')
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     text = models.TextField(blank=True, null=True)
     id = models.UUIDField(default=uuid.uuid4, unique=True,

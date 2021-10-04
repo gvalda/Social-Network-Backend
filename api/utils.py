@@ -6,11 +6,6 @@ from django.http import Http404
 from users.models import Profile
 
 
-# def get_or_bad_request(structure, field):
-#     if not field in structure:
-#         raise Http404(f'Expected {field} but was not found')
-#     return structure[field]
-
 def update_object(object, **kwargs):
     for key, value in kwargs.items():
         setattr(object, key, value)

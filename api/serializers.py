@@ -21,7 +21,10 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('username', 'first_name', 'last_name',
                   'email', 'profile', 'password')
-        extra_kwargs = {'password': {'write_only': True, }}
+        extra_kwargs = {
+            'password': {'write_only': True, },
+            'profile': {'required': False, }
+        }
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')
@@ -35,28 +38,36 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 
-class FollowerSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(many=False)
-
+class UserFollowerSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserFollowing
-        fields = ('user', )
-
-    def create(self, validated_data):
-        user = self.initial_data.get('user', None)
-        follow = self.initial_data.get('follow', None)
-        user_following = UserFollowing.objects.create(
-            user=user, following_user=follow)
-        user_following.save()
-        return user_following
+        fields = '__all__'
 
 
-class FollowingSerializer(serializers.ModelSerializer):
-    following_user = serializers.StringRelatedField(many=False)
+class FollowerListingField(serializers.RelatedField):
+    def to_representation(self, value):
+        return f'{value.user}'
+
+
+class FollowingListingField(serializers.RelatedField):
+    def to_representation(self, value):
+        return f'{value.following_user}'
+
+
+class UserFollowingSerializer(serializers.ModelSerializer):
+    following = FollowingListingField(many=True, read_only=True)
 
     class Meta:
-        model = UserFollowing
-        fields = ('following_user',)
+        model = User
+        fields = ('username', 'following')
+
+
+class UserFollowSerializer(serializers.ModelSerializer):
+    followers = FollowerListingField(many=True, read_only=True)
+
+    class Meta:
+        model = User
+        fields = ('username', 'followers')
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -71,6 +82,7 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = '__all__'
+        extra_kwargs = {'post': {'required': False}}
 
     def create(self, validated_data):
         author = self.initial_data.get('author', None)
@@ -89,7 +101,7 @@ class CommentSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, required=False)
     comments = CommentSerializer(many=True, required=False)
-    author = serializers.ReadOnlyField(source='author.username')
+    author = serializers.StringRelatedField(source='author.username')
 
     class Meta:
         model = Post
@@ -97,6 +109,7 @@ class PostSerializer(serializers.ModelSerializer):
                   'created', 'tags', 'comments')
 
     def create(self, validated_data):
+        print(validated_data)
         author = self.initial_data.get('author', None)
         if author:
             validated_data['author'] = author
@@ -115,3 +128,13 @@ class PostSerializer(serializers.ModelSerializer):
             instance.tags.add(tag)
         instance.save()
         return instance
+
+    def to_representation(self, value):
+        data = super(PostSerializer, self).to_representation(value)
+        tags = data.get('tags')
+        tag_names = [tag.get('name') for tag in tags]
+        comments = data.get('comments')
+        for comment in comments:
+            comment.pop('post')
+        data.update(tags=tag_names, comments=comments)
+        return data
