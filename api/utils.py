@@ -1,7 +1,6 @@
 from tags.models import Tag
 
 from django.forms.models import model_to_dict
-from django.http import Http404
 
 from users.models import Profile
 
