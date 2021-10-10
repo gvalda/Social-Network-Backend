@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from users.models import Profile, UserFollowing
-from posts.models import Post
+from posts.models import Post, PostLike
 from tags.models import Tag
 from comments.models import Comment
 
@@ -106,10 +106,9 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ('id', 'author', 'description',
-                  'created', 'tags', 'comments')
+                  'created', 'tags', 'comments', 'likes_number')
 
     def create(self, validated_data):
-        print(validated_data)
         author = self.initial_data.get('author', None)
         if author:
             validated_data['author'] = author
@@ -138,3 +137,16 @@ class PostSerializer(serializers.ModelSerializer):
             comment.pop('post')
         data.update(tags=tag_names, comments=comments)
         return data
+
+
+class PostLikeSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(
+        source='liked_user.username', read_only=True)
+
+    class Meta:
+        model = PostLike
+        fields = ('username', 'liked_user', 'post',)
+        extra_kwargs = {
+            'post': {'write_only': True, },
+            'liked_user': {'write_only': True, },
+        }

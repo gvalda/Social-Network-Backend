@@ -3,7 +3,7 @@ from django.http import Http404
 
 from rest_framework import status
 from rest_framework.decorators import api_view
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -194,9 +194,10 @@ class PostDetail(APIView):
     def get(self, request, format=None, **kwargs):
         if 'user_pk' in kwargs:
             user = get_object_or_404(User, username=kwargs['user_pk'])
-            post = get_object_or_404(Post, author=user, pk=kwargs['post_pk'])
+            post = get_object_or_404(
+                Post, author=user, pk=kwargs['post_pk'])
         else:
-            post = get_object_or_404(Post, pk=kwargs['post_pk'])
+            post = get_object_or_404(Post, id=kwargs['post_pk'])
         serializer = PostSerializer(post, many=False)
         return Response(serializer.data)
 
@@ -296,3 +297,45 @@ class TagDetail(APIView):
             tag = get_object_or_404(Tag, id=kwargs['tag_pk'])
         serializer = TagSerializer(tag, many=False)
         return Response(serializer.data)
+
+
+class LikesList(APIView):
+    permission_classes = (IsAuthenticated,)
+# TODO: if check user_pk?
+
+    def get(self, request, post_pk, format=None, **kwargs):
+        post = get_object_or_404(Post, pk=post_pk)
+        if request.user != post.author:
+            raise PermissionDenied(
+                {"message": "Only the owner can view post likes", })
+        post_likes = post.likes
+        serializer = PostLikeSerializer(post_likes, many=True)
+        print(serializer.data)
+        return Response(serializer.data)
+
+    def post(self, request, post_pk, format=None, **kwargs):
+        request_user = request.user
+        post = get_object_or_404(Post, pk=post_pk)
+        data = {
+            'post': post.pk,
+            'liked_user': request_user.pk,
+        }
+        serializer = PostLikeSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LikeDetail(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def delete(self, request, post_pk, liked_user_pk, format=None, **kwargs):
+        post = get_object_or_404(Post, pk=post_pk)
+        liked_user = get_object_or_404(User, pk=liked_user_pk)
+        post_like = get_object_or_404(post.likes, liked_user=liked_user_pk)
+        if request.user != liked_user:
+            raise PermissionDenied(
+                {"message": "Only the author of a like can remove it from the post", })
+        post_like.delete()
+        return Response({'message': f'Instance was successfully deleted'}, status=status.HTTP_204_NO_CONTENT)

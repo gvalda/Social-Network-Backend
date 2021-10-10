@@ -16,3 +16,4 @@ class PostAdmin(admin.ModelAdmin):
 
 admin.site.register(Post, PostAdmin)
 admin.site.register(PostPhoto)
+admin.site.register(PostLike)

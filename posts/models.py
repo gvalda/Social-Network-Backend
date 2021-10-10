@@ -26,6 +26,24 @@ class Post(models.Model):
     def __str__(self):
         return f'{str(self.author)}: {str(self.description)[:50]}'
 
+    @property
+    def likes_number(self):
+        return self.likes.count()
+
+
+class PostLike(models.Model):
+    post = models.ForeignKey(
+        Post, on_delete=models.CASCADE, related_name='likes')
+    liked_user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='liked_posts')
+    create = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (('post', 'liked_user'),)
+
+    def __str__(self):
+        return f'{self.liked_user} liked {self.post}'
+
 
 class PostPhoto(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
