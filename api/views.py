@@ -91,7 +91,9 @@ class UserFollowersList(APIView):
 
     def get(self, request, format=None, **kwargs):
         user = get_object_or_404(User, username=kwargs['user_pk'])
-        serializer = UserFollowSerializer(user, many=False)
+        user_following = user.followers.all()
+        serializer = UserFollowerSerializer(
+            user_following, many=True, fields=('user',))
         return Response(serializer.data)
 
     def post(self, request, format=None, **kwargs):
@@ -112,8 +114,9 @@ class UserFollowerDetail(APIView):
         user = get_object_or_404(User, username=kwargs['user_pk'])
         follower_user = get_object_or_404(User, username=kwargs['follower_pk'])
         user_following = get_object_or_404(
-            UserFollowing, user=follower_user,     following_user=user)
-        serializer = UserFollowerSerializer(user_following, many=False)
+            user.followers.all(), user=follower_user)
+        serializer = UserFollowerSerializer(
+            user_following, many=False, fields=('user',))
         return Response(serializer.data)
 
     def delete(self, request, format=None, **kwargs):
@@ -123,9 +126,9 @@ class UserFollowerDetail(APIView):
         if user != request_user:
             raise PermissionDenied({"message": "You don't have permission to modify",
                                     "user": request_user.username, })
-        user_follower = get_object_or_404(
-            UserFollowing, user=follower_user, following_user=user)
-        user_follower.delete()
+        user_following = get_object_or_404(
+            user.followers.all(), user=follower_user)
+        user_following.delete()
         return Response({'message': f'{user.username} is no more following {request_user.username} in the system'}, status=status.HTTP_204_NO_CONTENT)
 
 
@@ -134,7 +137,9 @@ class UserFollowingList(APIView):
 
     def get(self, request, format=None, **kwargs):
         user = get_object_or_404(User, username=kwargs['user_pk'])
-        serializer = UserFollowingSerializer(user, many=False)
+        following_user = user.following.all()
+        serializer = UserFollowerSerializer(
+            following_user, many=True, fields=('following_user',))
         return Response(serializer.data)
 
 
@@ -146,7 +151,7 @@ class UserFollowingDetail(APIView):
         following_user = get_object_or_404(
             User, username=kwargs['follower_pk'])
         user_following = get_object_or_404(
-            UserFollowing, user=user, following_user=following_user)
+            user.following.all(), following_user=following_user)
         serializer = UserFollowerSerializer(user_following, many=False)
         return Response(serializer.data)
 
@@ -159,7 +164,7 @@ class UserFollowingDetail(APIView):
             raise PermissionDenied({"message": "You don't have permission to modify",
                                     "user": request_user.username, })
         user_following = get_object_or_404(
-            UserFollowing, user=user, following_user=following_user)
+            user.following.all(), following_user=following_user)
         user_following.delete()
         return Response({'message': f'{user.username} is no more following {request_user.username} in the system'}, status=status.HTTP_204_NO_CONTENT)
 
@@ -301,7 +306,7 @@ class TagDetail(APIView):
 
 class LikesList(APIView):
     permission_classes = (IsAuthenticated,)
-# TODO: if check user_pk?
+# TODO: check user_pk?
 
     def get(self, request, post_pk, format=None, **kwargs):
         post = get_object_or_404(Post, pk=post_pk)

@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
 from users.models import Profile, UserFollowing
 from posts.models import Post, PostLike
 from tags.models import Tag
@@ -6,6 +7,19 @@ from comments.models import Comment
 
 from .utils import *
 from rest_framework import serializers
+
+
+class DynamicFieldsModelSerializer(serializers.ModelSerializer):
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', None)
+
+        super(DynamicFieldsModelSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -38,36 +52,48 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 
-class UserFollowerSerializer(serializers.ModelSerializer):
+class UserFollowerSerializer(DynamicFieldsModelSerializer):
+
     class Meta:
         model = UserFollowing
-        fields = '__all__'
+        fields = ('user', 'following_user',)
 
-
-class FollowerListingField(serializers.RelatedField):
     def to_representation(self, value):
-        return f'{value.user}'
+        data = super(UserFollowerSerializer, self).to_representation(value)
+        user_id = data.get('user', None)
+        if user_id:
+            user = get_object_or_404(User, pk=user_id)
+            data.update(user=user.username)
+        following_user_id = data.get('following_user', None)
+        if following_user_id:
+            following_user = get_object_or_404(User, pk=following_user_id)
+            data.update(following_user=following_user.username)
+        return data
+
+# class FollowerListingField(serializers.RelatedField):
+#     def to_representation(self, value):
+#         return f'{value.user}'
 
 
-class FollowingListingField(serializers.RelatedField):
-    def to_representation(self, value):
-        return f'{value.following_user}'
+# class FollowingListingField(serializers.RelatedField):
+#     def to_representation(self, value):
+#         return f'{value.following_user}'
 
 
-class UserFollowingSerializer(serializers.ModelSerializer):
-    following = FollowingListingField(many=True, read_only=True)
+# class UserFollowingSerializer(serializers.ModelSerializer):
+#     following = FollowingListingField(many=True, read_only=True)
 
-    class Meta:
-        model = User
-        fields = ('username', 'following')
+#     class Meta:
+#         model = User
+#         fields = ('username', 'following')
 
 
-class UserFollowSerializer(serializers.ModelSerializer):
-    followers = FollowerListingField(many=True, read_only=True)
+# class UserFollowSerializer(serializers.ModelSerializer):
+#     followers = FollowerListingField(many=True, read_only=True)
 
-    class Meta:
-        model = User
-        fields = ('username', 'followers')
+#     class Meta:
+#         model = User
+#         fields = ('username', 'followers')
 
 
 class TagSerializer(serializers.ModelSerializer):
