@@ -51,9 +51,9 @@ urlpatterns = [
     path('posts/<str:post_pk>/likes/<str:liked_user_pk>/',
          views.LikeDetail.as_view(), name='get_post_like'),
 
-    path('comments/',
+    path('posts/<str:post_pk>/comments/',
          views.CommentsList.as_view(), name='get_comments'),
-    path('comments/<str:comment_pk>/',
+    path('posts/<str:post_pk>/comments/<str:comment_pk>/',
          views.CommentDetail.as_view(), name='get_comment'),
 
     path('tags/', views.TagsList.as_view(), name='get_tags'),

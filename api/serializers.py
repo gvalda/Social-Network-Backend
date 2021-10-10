@@ -70,31 +70,6 @@ class UserFollowerSerializer(DynamicFieldsModelSerializer):
             data.update(following_user=following_user.username)
         return data
 
-# class FollowerListingField(serializers.RelatedField):
-#     def to_representation(self, value):
-#         return f'{value.user}'
-
-
-# class FollowingListingField(serializers.RelatedField):
-#     def to_representation(self, value):
-#         return f'{value.following_user}'
-
-
-# class UserFollowingSerializer(serializers.ModelSerializer):
-#     following = FollowingListingField(many=True, read_only=True)
-
-#     class Meta:
-#         model = User
-#         fields = ('username', 'following')
-
-
-# class UserFollowSerializer(serializers.ModelSerializer):
-#     followers = FollowerListingField(many=True, read_only=True)
-
-#     class Meta:
-#         model = User
-#         fields = ('username', 'followers')
-
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
