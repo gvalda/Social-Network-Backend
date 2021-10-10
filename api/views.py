@@ -183,9 +183,9 @@ class PostsList(APIView):
 
     def post(self, request, format=None, **kwargs):
         user = get_object_or_404(User, username=request.user.username)
-        request.data['author'] = user
-        tags = make_dict_from_names(request.data['tags'])
-        request.data['tags'] = tags
+        request.data['author'] = user.id
+        tags = request.data['tags']
+        create_not_existing_tags(tags)
         serializer = PostSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -212,7 +212,9 @@ class PostDetail(APIView):
         if user != instance.author:
             raise PermissionDenied({"message": "You don't have permission to access",
                                     "post_id": instance.id})
-        serializer = PostSerializer(instance, data=request.data)
+        tags = request.data['tags']
+        create_not_existing_tags(tags)
+        serializer = PostSerializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -244,7 +246,7 @@ class CommentsList(APIView):
         user = request.user
         post = get_object_or_404(Post, id=kwargs['post_pk'])
         request.data['post'] = post.id
-        request.data['author'] = user
+        request.data['author'] = user.id
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -270,7 +272,8 @@ class CommentDetail(APIView):
                 id=kwargs['comment_pk'], post=kwargs['post_pk'])
         else:
             instance = Comment.objects.get(id=kwargs['comment_pk'])
-        serializer = CommentSerializer(instance, data=request.data)
+        serializer = CommentSerializer(
+            instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)

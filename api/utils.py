@@ -9,6 +9,28 @@ from tags.models import Tag
 from comments.models import Comment
 
 
+def create_not_existing_tags(tags):
+    for tag in tags:
+        Tag.objects.get_or_create(name=tag)
+
+
+def get_object_or_none(model, **kwargs):
+    try:
+        retrieved_object = model.objects.get(**kwargs)
+    except model.DoesNotExist:
+        retrieved_object = None
+    return retrieved_object
+
+
+def get_username_from_id(id):
+    if id:
+        user = get_object_or_none(User, id=id)
+        if user:
+            username = user.username
+            return username
+    return None
+
+
 def update_object(object, **kwargs):
     for key, value in kwargs.items():
         setattr(object, key, value)

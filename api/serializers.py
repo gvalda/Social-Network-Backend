@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404
+from django.forms.models import model_to_dict
+
 from users.models import Profile, UserFollowing
 from posts.models import Post, PostLike
 from tags.models import Tag
@@ -7,19 +8,6 @@ from comments.models import Comment
 
 from .utils import *
 from rest_framework import serializers
-
-
-class DynamicFieldsModelSerializer(serializers.ModelSerializer):
-    def __init__(self, *args, **kwargs):
-        fields = kwargs.pop('fields', None)
-
-        super(DynamicFieldsModelSerializer, self).__init__(*args, **kwargs)
-
-        if fields is not None:
-            allowed = set(fields)
-            existing = set(self.fields)
-            for field_name in existing - allowed:
-                self.fields.pop(field_name)
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -52,6 +40,19 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 
+class DynamicFieldsModelSerializer(serializers.ModelSerializer):
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', None)
+
+        super(DynamicFieldsModelSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+
+
 class UserFollowerSerializer(DynamicFieldsModelSerializer):
 
     class Meta:
@@ -62,12 +63,14 @@ class UserFollowerSerializer(DynamicFieldsModelSerializer):
         data = super(UserFollowerSerializer, self).to_representation(value)
         user_id = data.get('user', None)
         if user_id:
-            user = get_object_or_404(User, pk=user_id)
-            data.update(user=user.username)
+            user = get_object_or_none(User, id=user_id)
+            if user:
+                data.update(user=user.username)
         following_user_id = data.get('following_user', None)
         if following_user_id:
-            following_user = get_object_or_404(User, pk=following_user_id)
-            data.update(following_user=following_user.username)
+            following_user = get_object_or_none(User, id=following_user_id)
+            if following_user:
+                data.update(following_user=following_user.username)
         return data
 
 
@@ -78,65 +81,47 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.StringRelatedField(many=False)
-
     class Meta:
         model = Comment
         fields = '__all__'
-        extra_kwargs = {'post': {'required': False}}
+        extra_kwargs = {'post': {'write_only': True}}
 
-    def create(self, validated_data):
-        author = self.initial_data.get('author', None)
-        if author:
-            validated_data['author'] = author
-        comment = Comment.objects.create(**validated_data)
-        comment.save()
-        return comment
-
-    def update(self, instance, validated_data):
-        instance.text = validated_data.get('text', instance.text)
-        instance.save()
-        return instance
+    def to_representation(self, value):
+        data = super(CommentSerializer, self).to_representation(value)
+        author_id = data.get('author', None)
+        if author_id:
+            author = get_object_or_none(User, id=author_id)
+            if author:
+                data.update(author=author.username)
+        return data
 
 
 class PostSerializer(serializers.ModelSerializer):
-    tags = TagSerializer(many=True, required=False)
-    comments = CommentSerializer(many=True, required=False)
-    author = serializers.StringRelatedField(source='author.username')
-
     class Meta:
         model = Post
         fields = ('id', 'author', 'description',
                   'created', 'tags', 'comments', 'likes_number')
-
-    def create(self, validated_data):
-        author = self.initial_data.get('author', None)
-        if author:
-            validated_data['author'] = author
-        tags_data = validated_data.pop('tags')
-        post = Post.objects.create(**validated_data)
-        for tag in get_tags_from_dicts(tags_data):
-            post.tags.add(tag)
-        post.save()
-        return post
-
-    def update(self, instance, validated_data):
-        tags_data = validated_data.pop('tags', [])
-        instance.description = validated_data.get(
-            'description', instance.description)
-        for tag in get_tags_from_dicts(tags_data):
-            instance.tags.add(tag)
-        instance.save()
-        return instance
+        extra_kwargs = {'comments': {'required': False}}
 
     def to_representation(self, value):
         data = super(PostSerializer, self).to_representation(value)
-        tags = data.get('tags')
-        tag_names = [tag.get('name') for tag in tags]
-        comments = data.get('comments')
-        for comment in comments:
-            comment.pop('post')
-        data.update(tags=tag_names, comments=comments)
+        author_id = data.get('author', None)
+        author_username = get_username_from_id(author_id)
+        if author_username:
+            data.update(author=author_username)
+        comments_ids = data.get('comments', None)
+        if comments_ids:
+            comments = []
+            for comment_id in comments_ids:
+                comment = get_object_or_none(Comment, id=comment_id)
+                comment_dict = model_to_dict(comment)
+                comment_dict.pop('post')
+                author_id = comment_dict.get('author', None)
+                author_username = get_username_from_id(author_id)
+                if author_username:
+                    comment_dict.update(author=author_username)
+                comments.append(comment_dict)
+            data.update(comments=comments)
         return data
 
 
