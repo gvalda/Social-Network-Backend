@@ -16,30 +16,30 @@ urlpatterns = [
     path('users/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('users/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
-    path('users/<str:user_pk>/', views.UserDetail.as_view(), name='get_user'),
-    path('users/<str:user_pk>/followers/',
+    path('users/<str:username>/', views.UserDetail.as_view(), name='get_user'),
+    path('users/<str:username>/followers/',
          views.UserFollowersList.as_view(), name='get_user_followers'),
-    path('users/<str:user_pk>/followers/<str:follower_pk>/',
+    path('users/<str:username>/followers/<str:follower_username>/',
          views.UserFollowerDetail.as_view(), name='get_user_follower'),
 
-    path('users/<str:user_pk>/following/',
+    path('users/<str:username>/following/',
          views.UserFollowingList.as_view(), name='get_user_following'),
-    path('users/<str:user_pk>/following/<str:following_pk>',
+    path('users/<str:username>/following/<str:following_username>',
          views.UserFollowingDetail.as_view(), name='get_user_following'),
 
-    path('users/<str:user_pk>/posts/',
+    path('users/<str:username>/posts/',
          views.PostsList.as_view(), name='get_user_posts'),
-    path('users/<str:user_pk>/posts/<str:post_pk>/',
+    path('users/<str:username>/posts/<str:post_pk>/',
          views.PostDetail.as_view(), name='get_user_post'),
 
-    path('users/<str:user_pk>/posts/<str:post_pk>/comments/',
+    path('users/<str:username>/posts/<str:post_pk>/comments/',
          views.CommentsList.as_view(), name='get_user_post_comments'),
-    path('users/<str:user_pk>/posts/<str:post_pk>/comments/<str:comment_pk>/',
+    path('users/<str:username>/posts/<str:post_pk>/comments/<str:comment_pk>/',
          views.CommentDetail.as_view(), name='get_user_post_comment'),
 
-    path('users/<str:user_pk>/posts/<str:post_pk>/likes/',
+    path('users/<str:username>/posts/<str:post_pk>/likes/',
          views.LikesList.as_view(), name='get_user_post_likes'),
-    path('users/<str:user_pk>/posts/<str:post_pk>/likes/<str:liked_user_pk>/',
+    path('users/<str:username>/posts/<str:post_pk>/likes/<str:liked_username>/',
          views.LikeDetail.as_view(), name='get_user_post_like'),
 
 
@@ -48,7 +48,7 @@ urlpatterns = [
 
     path('posts/<str:post_pk>/likes/',
          views.LikesList.as_view(), name='get_post_likes'),
-    path('posts/<str:post_pk>/likes/<str:liked_user_pk>/',
+    path('posts/<str:post_pk>/likes/<str:liked_username>/',
          views.LikeDetail.as_view(), name='get_post_like'),
 
     path('posts/<str:post_pk>/comments/',
