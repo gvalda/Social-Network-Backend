@@ -282,8 +282,8 @@ class TagsList(APIView):
 class TagDetail(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
-    def get(self, request, tag_pk, format=None, **kwargs):
-        tag = get_tag(tag_pk, post_pk=kwargs.get('post_pk', None),
+    def get(self, request, tag_name, format=None, **kwargs):
+        tag = get_tag(tag_name, post_pk=kwargs.get('post_pk', None),
                       username=kwargs.get('username', None))
         serializer = TagSerializer(tag, many=False)
         return Response(serializer.data)

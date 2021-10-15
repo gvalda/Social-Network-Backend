@@ -29,43 +29,43 @@ urlpatterns = [
 
     path('users/<str:username>/posts/',
          views.PostsList.as_view(), name='get_user_posts'),
-    path('users/<str:username>/posts/<str:post_pk>/',
+    path('users/<str:username>/posts/<uuid:post_pk>/',
          views.PostDetail.as_view(), name='get_user_post'),
 
-    path('users/<str:username>/posts/<str:post_pk>/tags/',
+    path('users/<str:username>/posts/<uuid:post_pk>/tags/',
          views.TagsList.as_view(), name='get_user_post_tags'),
-    path('users/<str:username>/posts/<str:post_pk>/tags/<str:tag_pk>/',
+    path('users/<str:username>/posts/<uuid:post_pk>/tags/<str:tag_name>/',
          views.TagDetail.as_view(), name='get_user_post_tag'),
 
-    path('users/<str:username>/posts/<str:post_pk>/comments/',
+    path('users/<str:username>/posts/<uuid:post_pk>/comments/',
          views.CommentsList.as_view(), name='get_user_post_comments'),
-    path('users/<str:username>/posts/<str:post_pk>/comments/<str:comment_pk>/',
+    path('users/<str:username>/posts/<uuid:post_pk>/comments/<uuid:comment_pk>/',
          views.CommentDetail.as_view(), name='get_user_post_comment'),
 
-    path('users/<str:username>/posts/<str:post_pk>/likes/',
+    path('users/<str:username>/posts/<uuid:post_pk>/likes/',
          views.LikesList.as_view(), name='get_user_post_likes'),
-    path('users/<str:username>/posts/<str:post_pk>/likes/<str:liked_username>/',
+    path('users/<str:username>/posts/<uuid:post_pk>/likes/<str:liked_username>/',
          views.LikeDetail.as_view(), name='get_user_post_like'),
 
 
     path('posts/', views.PostsList.as_view(), name='get_posts'),
-    path('posts/<str:post_pk>/', views.PostDetail.as_view(), name='get_post'),
+    path('posts/<uuid:post_pk>/', views.PostDetail.as_view(), name='get_post'),
 
-    path('posts/<str:post_pk>/tags/',
+    path('posts/<uuid:post_pk>/tags/',
          views.TagsList.as_view(), name='get_post_tags'),
-    path('posts/<str:post_pk>/tags/<str:tag_pk>/',
+    path('posts/<uuid:post_pk>/tags/<str:tag_name>/',
          views.TagDetail.as_view(), name='get_post_tag'),
 
-    path('posts/<str:post_pk>/likes/',
+    path('posts/<uuid:post_pk>/likes/',
          views.LikesList.as_view(), name='get_post_likes'),
-    path('posts/<str:post_pk>/likes/<str:liked_username>/',
+    path('posts/<uuid:post_pk>/likes/<str:liked_username>/',
          views.LikeDetail.as_view(), name='get_post_like'),
 
-    path('posts/<str:post_pk>/comments/',
+    path('posts/<uuid:post_pk>/comments/',
          views.CommentsList.as_view(), name='get_comments'),
-    path('posts/<str:post_pk>/comments/<str:comment_pk>/',
+    path('posts/<uuid:post_pk>/comments/<str:comment_pk>/',
          views.CommentDetail.as_view(), name='get_comment'),
 
     path('tags/', views.TagsList.as_view(), name='get_tags'),
-    path('tags/<str:tag_pk>/', views.TagDetail.as_view(), name='get_tag'),
+    path('tags/<uuid:tag_name>/', views.TagDetail.as_view(), name='get_tag'),
 ]
