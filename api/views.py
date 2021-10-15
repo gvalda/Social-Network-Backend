@@ -2,11 +2,13 @@ from django.shortcuts import get_object_or_404
 from django.http import Http404
 
 from rest_framework import status
+from rest_framework.settings import api_settings
 from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from api.mixins import CustomPaginationMixin
 
 from users.models import User, UserFollowing
 from posts.models import Post
@@ -42,14 +44,15 @@ def get_routes(request):
 
 
 class UsersList(APIView):
+    serializer_class = UserSerializer
 
     def get(self, request, format=None):
         users = get_users()
-        serializer = UserSerializer(users, many=True)
+        serializer = self.serializer_class(users, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None, **kwargs):
-        serializer = UserSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -58,10 +61,11 @@ class UsersList(APIView):
 
 class UserDetail(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    serializer_class = UserSerializer
 
     def get(self, request, username, format=None, **kwargs):
         user = get_user(username)
-        serializer = UserSerializer(user, many=False)
+        serializer = self.serializer_class(user, many=False)
         return Response(serializer.data)
 
     def patch(self, request, username, format=None, **kwargs):
@@ -70,7 +74,8 @@ class UserDetail(APIView):
         if instance != request_user:
             raise PermissionDenied({"message": "You don't have permission to modify",
                                     "user": request_user.username, })
-        serializer = UserSerializer(instance, data=request.data, partial=True)
+        serializer = self.serializer_class(
+            instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -88,10 +93,11 @@ class UserDetail(APIView):
 
 class UserFollowersList(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    serializer_class = UserFollowerSerializer
 
     def get(self, request, username, format=None, **kwargs):
         user_followers = get_user_followers(username)
-        serializer = UserFollowerSerializer(
+        serializer = self.serializer_class(
             user_followers, many=True, fields=('user',))
         return Response(serializer.data)
 
@@ -99,7 +105,7 @@ class UserFollowersList(APIView):
         follow = get_user(username)
         user = request.user
         data = {'user': user.pk, 'following_user': follow.pk, }
-        serializer = UserFollowerSerializer(data=data)
+        serializer = self.serializer_class(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -116,10 +122,11 @@ class UserFollowersList(APIView):
 
 class UserFollowerDetail(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    serializer_class = UserFollowerSerializer
 
     def get(self, request, username, follower_username, format=None, **kwargs):
         user_follower = get_user_follower(username, follower_username)
-        serializer = UserFollowerSerializer(
+        serializer = self.serializer_class(
             user_follower, many=False, fields=('user',))
         return Response(serializer.data)
 
@@ -136,20 +143,22 @@ class UserFollowerDetail(APIView):
 
 class UserFollowingList(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    serializer_class = UserFollowerSerializer
 
     def get(self, request, username, format=None, **kwargs):
         user_followings = get_user_followings(username)
-        serializer = UserFollowerSerializer(
+        serializer = self.serializer_class(
             user_followings, many=True, fields=('following_user',))
         return Response(serializer.data)
 
 
 class UserFollowingDetail(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    serializer_class = UserFollowerSerializer
 
     def get(self, request, username, following_username, format=None, **kwargs):
         user_following = get_user_following(username, following_username)
-        serializer = UserFollowerSerializer(user_following, many=False)
+        serializer = self.serializer_class(user_following, many=False)
         return Response(serializer.data)
 
     def delete(self, request, username, following_username, format=None, **kwargs):
@@ -163,20 +172,24 @@ class UserFollowingDetail(APIView):
         return Response({'message': f'{user.username} is no more following {request_user.username} in the system'}, status=status.HTTP_204_NO_CONTENT)
 
 
-class PostsList(APIView):
+class PostsList(APIView, CustomPaginationMixin):
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    pagination_class = api_settings.DEFAULT_PAGINATION_CLASS
+    serializer_class = PostSerializer
 
     def get(self, request, format=None, **kwargs):
         posts = get_posts(username=kwargs.get('username', None))
-        serializer = PostSerializer(posts, many=True)
-        return Response(serializer.data)
+        page = self.paginate_queryset(posts)
+        if page is not None:
+            serializer = self.serializer_class(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
     def post(self, request, format=None, **kwargs):
         user = request.user
         request.data['author'] = user.id
         tags = request.data.get('tags', [])
         create_not_existing_tags(tags)
-        serializer = PostSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -185,10 +198,11 @@ class PostsList(APIView):
 
 class PostDetail(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly, )
+    serializer_class = PostSerializer
 
     def get(self, request, post_pk, format=None, **kwargs):
         post = get_post(post_pk, username=kwargs.get('username', None))
-        serializer = PostSerializer(post, many=False)
+        serializer = self.serializer_class(post, many=False)
         return Response(serializer.data)
 
     def patch(self, request, post_pk, format=None, **kwargs):
@@ -199,7 +213,8 @@ class PostDetail(APIView):
                                     "post_id": instance.id})
         tags = request.data.get('tags', [])
         create_not_existing_tags(tags)
-        serializer = PostSerializer(instance, data=request.data, partial=True)
+        serializer = self.serializer_class(
+            instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -215,21 +230,25 @@ class PostDetail(APIView):
         return Response({'message': f'Instance was successfully deleted'}, status=status.HTTP_204_NO_CONTENT)
 
 
-class CommentsList(APIView):
+class CommentsList(APIView, CustomPaginationMixin):
     permission_classes = (IsAuthenticatedOrReadOnly, )
+    pagination_class = api_settings.DEFAULT_PAGINATION_CLASS
+    serializer_class = CommentSerializer
 
     def get(self, request, post_pk, format=None, **kwargs):
         comments = get_comments(
             post_pk=post_pk, username=kwargs.get('username', None))
-        serializer = CommentSerializer(comments, many=True)
-        return Response(serializer.data)
+        page = self.paginate_queryset(comments)
+        if page is not None:
+            serializer = self.serializer_class(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
     def post(self, request, post_pk, format=None, **kwargs):
         user = request.user
         post = get_post(post_pk, username=kwargs.get('username', None))
         request.data['post'] = post.id
         request.data['author'] = user.id
-        serializer = CommentSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -238,11 +257,12 @@ class CommentsList(APIView):
 
 class CommentDetail(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    serializer_class = CommentSerializer
 
     def get(self, request, post_pk, comment_pk, format=None, **kwargs):
         comment = get_comment(comment_pk, post_pk=post_pk,
                               username=kwargs.get('username', None))
-        serializer = CommentSerializer(comment, many=False)
+        serializer = self.serializer_class(comment, many=False)
         return Response(serializer.data)
 
     def patch(self, request, post_pk, comment_pk, format=None, **kwargs):
@@ -251,7 +271,7 @@ class CommentDetail(APIView):
         if request.user != instance.author:
             raise PermissionDenied({"message": "You don't have permission to access",
                                     "post_id": instance.id})
-        serializer = CommentSerializer(
+        serializer = self.serializer_class(
             instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -269,28 +289,34 @@ class CommentDetail(APIView):
         return Response({'message': f'Instance was successfully deleted'}, status=status.HTTP_204_NO_CONTENT)
 
 
-class TagsList(APIView):
+class TagsList(APIView, CustomPaginationMixin):
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    pagination_class = api_settings.DEFAULT_PAGINATION_CLASS
+    serializer_class = TagSerializer
 
     def get(self, request, format=None, **kwargs):
         tags = get_tags(post_pk=kwargs.get('post_pk', None),
                         username=kwargs.get('username', None))
-        serializer = TagSerializer(tags, many=True)
-        return Response(serializer.data)
+        page = self.paginate_queryset(tags)
+        if page is not None:
+            serializer = self.serializer_class(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
 
 class TagDetail(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    serializer_class = TagSerializer
 
     def get(self, request, tag_name, format=None, **kwargs):
         tag = get_tag(tag_name, post_pk=kwargs.get('post_pk', None),
                       username=kwargs.get('username', None))
-        serializer = TagSerializer(tag, many=False)
+        serializer = self.serializer_class(tag, many=False)
         return Response(serializer.data)
 
 
 class LikesList(APIView):
     permission_classes = (IsAuthenticated,)
+    serializer_class = PostLikeSerializer
 
     def get(self, request, post_pk, format=None, **kwargs):
         post = get_post(post_pk, username=kwargs.get('username', None))
@@ -298,7 +324,7 @@ class LikesList(APIView):
             raise PermissionDenied(
                 {"message": "Only the owner can view post likes", })
         post_likes = post.likes
-        serializer = PostLikeSerializer(post_likes, many=True)
+        serializer = self.serializer_class(post_likes, many=True)
         print(serializer.data)
         return Response(serializer.data)
 
@@ -309,7 +335,7 @@ class LikesList(APIView):
             'post': post.pk,
             'liked_user': request_user.pk,
         }
-        serializer = PostLikeSerializer(data=data)
+        serializer = self.serializer_class(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
