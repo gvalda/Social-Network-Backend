@@ -64,13 +64,13 @@ class UserDetail(APIView):
         serializer = UserSerializer(user, many=False)
         return Response(serializer.data)
 
-    def put(self, request, username, format=None, **kwargs):
+    def patch(self, request, username, format=None, **kwargs):
         instance = get_user(username)
         request_user = request.user
         if instance != request_user:
             raise PermissionDenied({"message": "You don't have permission to modify",
                                     "user": request_user.username, })
-        serializer = UserSerializer(instance, data=request.data)
+        serializer = UserSerializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -105,6 +105,14 @@ class UserFollowersList(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def delete(self, request, username, format=None, **kwargs):
+        followed_user = get_user(username)
+        request_user = request.user
+        user_follower = get_user_follower(
+            followed_user.username, request_user.username)
+        user_follower.delete()
+        return Response({'message': f'{request_user.username} is no more following {followed_user.username} in the system'}, status=status.HTTP_204_NO_CONTENT)
+
 
 class UserFollowerDetail(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
@@ -123,7 +131,7 @@ class UserFollowerDetail(APIView):
                                     "user": request_user.username, })
         user_follower = get_user_follower(username, follower_username)
         user_follower.delete()
-        return Response({'message': f'{user.username} is no more following {request_user.username} in the system'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'message': f'{follower_username} is no more following {request_user.username} in the system'}, status=status.HTTP_204_NO_CONTENT)
 
 
 class UserFollowingList(APIView):
@@ -140,7 +148,7 @@ class UserFollowingDetail(APIView):
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
     def get(self, request, username, following_username, format=None, **kwargs):
-        user_following = get_user_followings(username, following_username)
+        user_following = get_user_following(username, following_username)
         serializer = UserFollowerSerializer(user_following, many=False)
         return Response(serializer.data)
 
@@ -150,7 +158,7 @@ class UserFollowingDetail(APIView):
         if user != request_user:
             raise PermissionDenied({"message": "You don't have permission to modify",
                                     "user": request_user.username, })
-        user_following = get_user_followings(username, following_username)
+        user_following = get_user_following(username, following_username)
         user_following.delete()
         return Response({'message': f'{user.username} is no more following {request_user.username} in the system'}, status=status.HTTP_204_NO_CONTENT)
 
@@ -166,7 +174,7 @@ class PostsList(APIView):
     def post(self, request, format=None, **kwargs):
         user = request.user
         request.data['author'] = user.id
-        tags = request.data['tags']
+        tags = request.data.get('tags', [])
         create_not_existing_tags(tags)
         serializer = PostSerializer(data=request.data)
         if serializer.is_valid():
@@ -183,13 +191,13 @@ class PostDetail(APIView):
         serializer = PostSerializer(post, many=False)
         return Response(serializer.data)
 
-    def put(self, request, post_pk, format=None, **kwargs):
+    def patch(self, request, post_pk, format=None, **kwargs):
         instance = get_post(post_pk, username=kwargs.get('username', None))
         user = request.user
         if user != instance.author:
-            raise PermissionDenied({"message": "You don't have permission to access",
+            raise PermissionDenied({"message": "You don't have permission to modify this object",
                                     "post_id": instance.id})
-        tags = request.data['tags']
+        tags = request.data.get('tags', [])
         create_not_existing_tags(tags)
         serializer = PostSerializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
@@ -237,9 +245,12 @@ class CommentDetail(APIView):
         serializer = CommentSerializer(comment, many=False)
         return Response(serializer.data)
 
-    def put(self, request, post_pk, comment_pk, format=None, **kwargs):
+    def patch(self, request, post_pk, comment_pk, format=None, **kwargs):
         instance = get_comment(comment_pk, post_pk=post_pk,
                                username=kwargs.get('username', None))
+        if request.user != instance.author:
+            raise PermissionDenied({"message": "You don't have permission to access",
+                                    "post_id": instance.id})
         serializer = CommentSerializer(
             instance, data=request.data, partial=True)
         if serializer.is_valid():
@@ -247,6 +258,15 @@ class CommentDetail(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, post_pk, comment_pk, format=None, **kwargs):
+        instance = get_comment(comment_pk, post_pk=post_pk,
+                               username=kwargs.get('username', None))
+        if request.user != instance.author and request.user != instance.post.author:
+            raise PermissionDenied({"message": "You don't have permission to access",
+                                    "post_id": instance.id})
+        instance.delete()
+        return Response({'message': f'Instance was successfully deleted'}, status=status.HTTP_204_NO_CONTENT)
 
 
 class TagsList(APIView):
@@ -300,12 +320,13 @@ class LikeDetail(APIView):
     permission_classes = (IsAuthenticated,)
 
     def delete(self, request, post_pk, liked_username, format=None, **kwargs):
+
+        user = get_user(liked_username)
+        if request.user != user:
+            raise PermissionDenied(
+                {"message": "Only the author of a like can remove it from the post", })
         liked_user = get_liked_user(
             liked_username, post_pk, post_author_username=kwargs.get(
                 'username', None))
-        liked_user = get_user(liked_username)
-        if request.user != liked_user:
-            raise PermissionDenied(
-                {"message": "Only the author of a like can remove it from the post", })
         liked_user.delete()
         return Response({'message': f'Instance was successfully deleted'}, status=status.HTTP_204_NO_CONTENT)

@@ -129,7 +129,7 @@ def get_user_followings(username):
 
 def get_user_following(username, following_username):
     user_followings = get_user_followings(username)
-    following_user = get_user(following_username)
+    followed_user = get_user(following_username)
     user_following = get_object_or_404(
-        user_followings, following_user=following_user)
+        user_followings, following_user=followed_user)
     return user_following

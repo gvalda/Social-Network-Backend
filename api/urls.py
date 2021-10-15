@@ -32,6 +32,11 @@ urlpatterns = [
     path('users/<str:username>/posts/<str:post_pk>/',
          views.PostDetail.as_view(), name='get_user_post'),
 
+    path('users/<str:username>/posts/<str:post_pk>/tags/',
+         views.TagsList.as_view(), name='get_user_post_tags'),
+    path('users/<str:username>/posts/<str:post_pk>/tags/<str:tag_pk>/',
+         views.TagDetail.as_view(), name='get_user_post_tag'),
+
     path('users/<str:username>/posts/<str:post_pk>/comments/',
          views.CommentsList.as_view(), name='get_user_post_comments'),
     path('users/<str:username>/posts/<str:post_pk>/comments/<str:comment_pk>/',
@@ -45,6 +50,11 @@ urlpatterns = [
 
     path('posts/', views.PostsList.as_view(), name='get_posts'),
     path('posts/<str:post_pk>/', views.PostDetail.as_view(), name='get_post'),
+
+    path('posts/<str:post_pk>/tags/',
+         views.TagsList.as_view(), name='get_post_tags'),
+    path('posts/<str:post_pk>/tags/<str:tag_pk>/',
+         views.TagDetail.as_view(), name='get_post_tag'),
 
     path('posts/<str:post_pk>/likes/',
          views.LikesList.as_view(), name='get_post_likes'),
