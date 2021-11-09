@@ -13,7 +13,6 @@ from .utils import *
 
 @api_view(['GET'])
 def get_routes(request):
-    print(1)
     routes = [
         {'GET': '/api/users'},
         {'POST': '/api/users'},

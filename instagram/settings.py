@@ -2,23 +2,14 @@ from datetime import timedelta
 from pathlib import Path
 import os
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-=u7j^(fqdy$4rf(y_7p39)pun%u!*_d*n5co-=3o05(qr+4&^!'
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['.herokuapp.com', '127.0.0.1']
-
-
-# Application definition
+ALLOWED_HOSTS = ['.herokuapp.com', '127.0.0.1', 'localhost']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -32,6 +23,7 @@ INSTALLED_APPS = [
     'posts.apps.PostsConfig',
     'tags.apps.TagsConfig',
     'comments.apps.CommentsConfig',
+    'storages',
 ]
 
 REST_FRAMEWORK = {
@@ -74,6 +66,7 @@ SIMPLE_JWT = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -164,22 +157,21 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
+MEDIA_URL = ''
 
+STATICFILES_DIRS = [
+    BASE_DIR / 'static'
+]
 
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-if DEBUG:
-    STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, 'static')
-    ]
-else:
-    STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
-MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'static/images')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+AWS_QUERYSTRING_AUTH = False
+AWS_S3_FILE_OVERWRITE = False
+
+AWS_S3_ACCESS_KEY_ID = 'AKIAXLPQ6ZNG44TZVKM4'
+AWS_S3_SECRET_ACCESS_KEY = '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'
+AWS_STORAGE_BUCKET_NAME = 'social-network-api'
