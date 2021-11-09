@@ -9,7 +9,8 @@ SECRET_KEY = 'django-insecure-=u7j^(fqdy$4rf(y_7p39)pun%u!*_d*n5co-=3o05(qr+4&^!
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['.herokuapp.com', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = [
+    'social-network-api-mysql.herokuapp.com/', '127.0.0.1', 'localhost']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
