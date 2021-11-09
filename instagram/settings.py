@@ -12,9 +12,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-=u7j^(fqdy$4rf(y_7p39)pun%u!*_d*n5co-=3o05(qr+4&^!'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['.herokuapp.com']
 
 
 # Application definition
@@ -107,10 +107,21 @@ WSGI_APPLICATION = 'instagram.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'pTs4SV4NFR',
+        'USER': 'pTs4SV4NFR',
+        'PASSWORD': 'i51BeYU7kj',
+        'HOST': 'remotemysql.com',
+        'PORT': '3306',
     }
 }
 

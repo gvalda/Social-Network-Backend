@@ -136,3 +136,15 @@ def get_user_following(username, following_username):
     user_following = get_object_or_404(
         user_followings, following_user=followed_user)
     return user_following
+
+
+def is_superuser(user):
+    if user.is_superuser:
+        return True
+    return False
+
+
+def is_author_or_superuser(user, instance):
+    if instance.author == user:
+        return True
+    return is_superuser(user)
