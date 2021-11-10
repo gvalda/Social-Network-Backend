@@ -113,9 +113,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'pTs4SV4NFR',
-        'USER': 'pTs4SV4NFR',
-        'PASSWORD': 'i51BeYU7kj',
-        'HOST': 'remotemysql.com',
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),
         'PORT': '3306',
     }
 }
@@ -173,6 +173,6 @@ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_FILE_OVERWRITE = False
 
-AWS_S3_ACCESS_KEY_ID = 'AKIAXLPQ6ZNG44TZVKM4'
-AWS_S3_SECRET_ACCESS_KEY = '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'
-AWS_STORAGE_BUCKET_NAME = 'social-network-api'
+AWS_S3_ACCESS_KEY_ID = os.environ.get('S3_ACCESS_KEY_ID')
+AWS_S3_SECRET_ACCESS_KEY = os.environ.get('S3_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('STORAGE_BUCKET_NAME')
