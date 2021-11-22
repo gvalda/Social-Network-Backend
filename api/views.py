@@ -1,10 +1,12 @@
 from rest_framework import status
+from rest_framework.serializers import Serializer
 from rest_framework.settings import api_settings
 from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 from api.mixins import CustomPaginationMixin
 
 from .serializers import *
@@ -47,6 +49,10 @@ def get_routes(request):
         {'GET': '/api/users/id/posts/id/tags/id'},
     ]
     return Response(routes)
+
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
 
 
 class UsersList(APIView):

@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User
 from django.forms.models import model_to_dict
 
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from users.models import Profile, UserFollowing
 from posts.models import Post, PostLike
 from tags.models import Tag
@@ -8,6 +10,18 @@ from comments.models import Comment
 
 from .utils import *
 from rest_framework import serializers
+
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        refresh = self.get_token(self.user)
+        data['refresh'] = str(refresh)
+        data['access'] = str(refresh.access_token)
+
+        data['username'] = self.user.username
+        data['is_staff'] = self.user.is_staff
+        return data
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -22,11 +36,10 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'first_name', 'last_name',
-                  'email', 'profile', 'password', 'is_staff')
+                  'email', 'profile', 'password')
         extra_kwargs = {
             'password': {'write_only': True, },
             'profile': {'required': False, },
-            'is_staff': {'read_only': True},
         }
 
     def create(self, validated_data):
